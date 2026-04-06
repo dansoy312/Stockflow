@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow | Digital Inventory Partner</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div id="landing-page">
+    <h1>StockFlow</h1>
+    <p>Bridging the gap between manual and digital for small shop owners.</p>
+    <button class="btn-large" onclick="showLoginModal()">Login to StockFlow</button>
+</div>
+
+<div id="login-modal" class="modal">
+    <div class="login-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 id="auth-title" style="color: var(--primary); margin: 0;">Welcome Back</h2>
+            <button onclick="closeLoginModal()" class="btn-close">×</button>
+        </div>
+        
+        <form id="login-form" onsubmit="handleLogin(event)">
+            <input type="text" id="login-user" class="search-bar" placeholder="Username" required="" style="margin-bottom: 15px;">
+            <input type="password" id="login-pass" class="search-bar" placeholder="Password" required="" style="margin-bottom: 15px;">
+            <button type="submit" class="btn-checkout" style="background: var(--accent);">Access Dashboard</button>
+            <p id="login-error" style="color: var(--danger); text-align: center; margin-top: 10px; display: none;">Invalid username or password!</p>
+            <p style="text-align: center; margin-top: 15px; font-size: 0.9rem;">
+                Don't have an account? <a href="#" onclick="toggleAuthMode('signup')" style="color: var(--accent); text-decoration: none; font-weight: bold;">Sign Up</a>
+            </p>
+        </form>
+
+        <form id="signup-form" onsubmit="handleSignup(event)" style="display: none;">
+            <input type="text" id="signup-user" class="search-bar" placeholder="Choose a Username" required="" style="margin-bottom: 15px;">
+            <input type="password" id="signup-pass" class="search-bar" placeholder="Create a Password" required="" style="margin-bottom: 15px;">
+            <button type="submit" class="btn-checkout" style="background: var(--success);">Create Account</button>
+            <p id="signup-error" style="color: var(--danger); text-align: center; margin-top: 10px; display: none;">Username already exists!</p>
+            <p style="text-align: center; margin-top: 15px; font-size: 0.9rem;">
+                Already have an account? <a href="#" onclick="toggleAuthMode('login')" style="color: var(--accent); text-decoration: none; font-weight: bold;">Log In</a>
+            </p>
+        </form>
+    </div>
+</div>
+
+<div class="mobile-header no-print">
+    <h2>StockFlow</h2>
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+</div>
+
+<nav class="no-print" id="sidebar">
+    <h1>StockFlow</h1>
+    <ul>
+        <li class="nav-item active" onclick="showPage('dashboard', this)">Dashboard</li>
+        <li class="nav-item" onclick="showPage('pos', this)">Point of Sale</li>
+        <li class="nav-item" onclick="showPage('inventory', this)">Inventory</li>
+        <li class="nav-item" onclick="showPage('portfolio', this)">Team Portfolio</li>
+        
+        <li class="nav-item nav-logout" onclick="logout()">Logout</li>
+    </ul>
+</nav>
+
+<main class="no-print">
+    <section id="dashboard" class="page-section active">
+        <header style="margin-bottom: 30px;">
+            <h1>Business Health Overview</h1>
+            <p style="color: #7f8c8d;">Track your growth and identify shortages at a glance.</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card" style="border-left-color: var(--success);">
+                <h3>Total Sales (Daily)</h3>
+                <div class="value" id="dash-total-sales">₱0.00</div>
+            </div>
+            <div class="card" style="border-left-color: var(--warning);">
+                <h3>Low Stock Items</h3>
+                <div class="value" id="dash-low-stock">0</div>
+            </div>
+            <div class="card">
+                <h3>Transactions</h3>
+                <div id="dash-trans-count" class="value">0</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="section-box">
+                <h3>Sales by Category</h3>
+                <div class="chart-container">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="section-box">
+                <h3>Recent Transactions</h3>
+                <div id="no-activity" style="color: #95a5a6; padding: 20px 0;">No sales logged yet.</div>
+                <ul id="activity-list" style="list-style: none; padding: 0; max-height: 250px; overflow-y: auto;"></ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="pos" class="page-section">
+        <header style="margin-bottom: 20px;">
+            <h1>Point of Sale</h1>
+        </header>
+
+        <div class="pos-layout">
+            <div class="pos-main">
+                <input type="text" class="search-bar" id="search-input" placeholder="🔍 Search products or scan barcode..." onkeyup="filterProducts()">
+                <div class="category-filters" id="category-filters"></div>
+                <div class="product-grid" id="product-grid"></div>
+            </div>
+
+            <div class="pos-sidebar">
+                <div class="cart-header">
+                    <h3>Current Order</h3>
+                </div>
+                <div class="cart-items" id="cart-items">
+                    <p style="color: #95a5a6; text-align: center; margin-top: 50px;">Cart is empty.<br>Click a product to add.</p>
+                </div>
+                <div class="cart-footer">
+                    <div class="cart-total">
+                        <span>Total:</span>
+                        <span id="cart-total-display">₱0.00</span>
+                    </div>
+
+                    <div class="payment-section">
+                        <input type="number" id="cash-tendered" placeholder="Amount Received (₱)" onkeyup="calculateChange()" min="0">
+                        <div class="change-display" id="change-display">Change: ₱0.00</div>
+                    </div>
+
+                    <button class="btn-checkout" id="btn-checkout" onclick="checkout()" disabled="">Confirm Payment</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="inventory" class="page-section">
+        <header style="margin-bottom: 20px;">
+            <h1>Inventory Management</h1>
+        </header>
+
+        <div class="section-box" style="margin-bottom: 20px; border-top: 5px solid var(--accent);">
+            <h3>➕ Add New Product</h3>
+            <form id="add-product-form" onsubmit="addProduct(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                <input type="text" id="new-p-name" class="search-bar" placeholder="Product Name (e.g., Magic Flakes)" required="">
+                <select id="new-p-cat" class="search-bar" required="">
+                    <option value="" disabled="" selected="">Select Category</option>
+                    <option value="Meat">Meat</option>
+                    <option value="Canned Goods">Canned Goods</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Pantry">Pantry</option>
+                </select>
+                <input type="number" id="new-p-price" class="search-bar" placeholder="Price (₱)" min="0" step="0.25" required="">
+                <input type="number" id="new-p-stock" class="search-bar" placeholder="Initial Stock Qty" min="0" required="">
+                <input type="text" id="new-p-img" class="search-bar" placeholder="Emoji Icon (e.g., 🍞)" required="">
+                <button type="submit" class="btn-checkout" style="grid-column: 1 / -1;">Save to Inventory</button>
+            </form>
+        </div>
+
+        <div class="section-box">
+            <h3>Current Stock Status</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                    <tr><th>Product Name</th><th>Stock Level</th><th>Current Status</th></tr>
+                    </thead>
+                    <tbody id="inventory-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="portfolio" class="page-section">
+        <header style="margin-bottom: 20px;">
+            <h1>Our Development Team</h1>
+        </header>
+
+        <div class="section-box">
+            <p>StockFlow was developed by a dedicated group of students focused on bridging the gap between manual tracking and digital inventory for local small shop owners. We are passionate about creating accessible community tools.</p>
+
+            <div class="profile-grid">
+                <div class="profile-card">
+                    <div class="profile-pic">👤</div>
+                    <h3>Christian Reynald Canto</h3>
+                    <p>Project Manager</p>
+                    <small>Lead Developer</small>
+                </div>
+                <div class="profile-card">
+                    <div class="profile-pic">👤</div>
+                    <h3>Samuel Deocares Divina</h3>
+                    <p>QA Engineer</p>
+                    <small>Lead Documentation</small>
+                </div>
+                <div class="profile-card">
+                    <div class="profile-pic">👤</div>
+                    <h3>Jayvie Gonzales Garcia</h3>
+                    <p>UX Designer</p>
+                    <small>Front-End Integration</small>
+                </div>
+                <div class="profile-card">
+                    <div class="profile-pic">👤</div>
+                    <h3>Jhaila David Pagaduan</h3>
+                    <p>System Analyst</p>
+                    <small>Data Logic Flow</small>
+                </div>
+                <div class="profile-card">
+                    <div class="profile-pic">👤</div>
+                    <h3>Mark Rain Rodolfo</h3>
+                    <p>UI Designer</p>
+                    <small>Visual Aesthetics</small>
+                </div>
+            </div> 
+        </div>
+    </section>
+</main>
+
+<div id="receipt-modal" class="modal">
+    <div class="modal-content receipt-paper">
+        <h2 style="text-align: center; margin-bottom: 5px;">StockFlow</h2>
+        <p style="text-align: center; font-size: 0.8rem; color: #7f8c8d; margin-top: 0;">Official Receipt</p>
+        <p><strong>Txn #:</strong> <span id="receipt-txn"></span> <span style="float: right;" id="receipt-date"></span></p>
+        <hr style="border-top: 1px dashed #ccc; margin: 15px 0;">
+
+        <div id="receipt-items" style="margin-bottom: 15px;"></div>
+
+        <hr style="border-top: 1px dashed #ccc; margin: 15px 0;">
+        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
+            <span>TOTAL:</span> <span id="receipt-total"></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+            <span>CASH:</span> <span id="receipt-cash"></span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+            <span>CHANGE:</span> <span id="receipt-change"></span>
+        </div>
+
+        <div class="no-print" style="margin-top: 30px; display: flex; gap: 10px;">
+            <button class="btn" onclick="window.print()" style="flex: 1; background: var(--secondary);">Print Receipt</button>
+            <button class="btn" onclick="closeReceipt()" style="flex: 1;">New Transaction</button>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
